@@ -11,12 +11,102 @@
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-html,body{height:100%;margin:0;background:#000}
+html,body{height:100%;margin:0;background:#000;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#dust-back{z-index:0}
+#dust-front{z-index:2}
+main{position:relative;z-index:1;perspective:900px}
+.float{animation:float 7s ease-in-out infinite}
+.twirl{animation:twirl 11s ease-in-out infinite}
 img{display:block;width:min(432px,calc(100vw - 32px));height:auto}
+@keyframes float{0%,100%{transform:translateY(-3%)}50%{transform:translateY(3%)}}
+@keyframes twirl{0%,100%{transform:rotateY(-10deg)}50%{transform:rotateY(10deg)}}
+@media (prefers-reduced-motion:reduce){.float,.twirl{animation:none}}
 </style>
 </head>
 <body>
-<main><img src="jesus-loves-you-emblem.svg" width="1412" height="1114" alt="Jesus Loves You. We love each other because He loves us first. 1 John 4:19."></main>
+<canvas id="dust-back" aria-hidden="true"></canvas>
+<main><div class="float"><div class="twirl"><img src="jesus-loves-you-emblem.svg" width="1412" height="1114" alt="Jesus Loves You. We love each other because He loves us first. 1 John 4:19."></div></div></main>
+<canvas id="dust-front" aria-hidden="true"></canvas>
+<script>
+// Dust circling the emblem in a slow vortex and rising away. Particles on the far side of the circle draw
+// behind the emblem, those on the near side in front of it.
+(function () {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var back = document.getElementById('dust-back'), front = document.getElementById('dust-front');
+  var bctx = back.getContext('2d'), fctx = front.getContext('2d');
+  var emblem = document.querySelector('main');
+  var w, h, dpr, cx, cy, size, particles = [];
+
+  // One soft dot, drawn once and scaled for every particle.
+  var dot = document.createElement('canvas');
+  dot.width = dot.height = 32;
+  var d = dot.getContext('2d'), g = d.createRadialGradient(16, 16, 0, 16, 16, 16);
+  g.addColorStop(0, 'rgba(255,250,240,1)');
+  g.addColorStop(0.35, 'rgba(255,248,235,0.45)');
+  g.addColorStop(1, 'rgba(255,245,230,0)');
+  d.fillStyle = g;
+  d.fillRect(0, 0, 32, 32);
+
+  function spawn(p, anywhere) {
+    p.r0 = size * (0.42 + Math.random() * Math.random() * 0.4);  // starting radius, most close to the emblem
+    p.a = Math.random() * Math.PI * 2;                 // angle around the vertical axis
+    p.spin = 0.07 + Math.random() * 0.05;              // radians per second, all the same way
+    p.rise = size * (0.008 + Math.random() * 0.016);   // px per second upward
+    p.y = size * (0.2 + Math.random() * 0.3);          // start below the emblem's middle
+    if (anywhere) p.y -= Math.random() * (cy + size);  // fill the sky on first load
+    p.s = 0.5 + Math.random() * Math.random() * 2.2;   // dot size, mostly tiny
+    p.o = 0.3 + Math.random() * 0.6;
+    p.tw = Math.random() * Math.PI * 2;                // twinkle phase
+    p.age = anywhere ? 3 : 0;
+    return p;
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = innerWidth; h = innerHeight;
+    [back, front].forEach(function (c) { c.width = w * dpr; c.height = h * dpr; });
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var r = emblem.getBoundingClientRect();
+    cx = r.left + r.width / 2; cy = r.top + r.height / 2; size = r.width;
+    var count = Math.round(Math.min(340, Math.max(160, w * h / 4500)));
+    particles = [];
+    for (var i = 0; i < count; i++) particles.push(spawn({}, true));
+  }
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 0.05); last = now;
+    bctx.clearRect(0, 0, w, h);
+    fctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.age += dt;
+      p.y -= p.rise * dt;
+      var climbed = Math.max(0, size * 0.5 - p.y) / size;   // how far above the emblem's lower half
+      var r = p.r0 * (1 + climbed * 0.55);                   // the vortex widens as it rises
+      p.a += p.spin * dt * Math.min(1.4, size * 0.55 / r);   // inner dust turns a little faster
+      var depth = Math.sin(p.a);                             // +1 nearest the viewer
+      var x = cx + Math.cos(p.a) * r;
+      var y = cy + p.y + depth * r * 0.2;                    // the circle seen from slightly above
+      var fade = Math.min(1, p.age / 2.5) * Math.max(0, Math.min(1, (y + 40) / (cy * 0.9)));
+      if (y < -20 || fade <= 0 && p.age > 3) { spawn(p, false); continue; }
+      var twinkle = 0.75 + 0.25 * Math.sin(now / 900 + p.tw);
+      var alpha = p.o * fade * twinkle * (0.55 + 0.45 * (depth + 1) / 2);
+      var s = p.s * (1 + 0.35 * depth) * 3;
+      var ctx = depth > 0 ? fctx : bctx;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(dot, x - s / 2, y - s / 2, s, s);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>
