@@ -2,7 +2,7 @@
 
 Minimal static site for https://jesuslovesyou.xyz.
 
-The existing emblem is centered in white on a black background at 144 CSS pixels wide, matching the Offer Filter website footer. No JavaScript, dependencies, or build step is required.
+The existing emblem is centered in white on a black background at 432 CSS pixels wide (three times the Offer Filter website footer's 144). `jesus-loves-you-emblem.svg` is a potrace vector trace of the Offer Filter master (`assets/jesus-loves-you-emblem.png`), filled white on the master's own 1412 × 1114 canvas. The favicon (`favicon.svg`, with `favicon-32.png` and `apple-touch-icon.png` rendered from it) is the headline alone, without the passage, white on black. No JavaScript, dependencies, or build step is required.
 
 Serve the `public` directory. On Render, use a Static Site with the `public` publish directory and automatic deploys disabled. Publishing must respect the owner's local-build policy.
 
