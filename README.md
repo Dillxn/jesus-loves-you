@@ -5,3 +5,10 @@ Minimal static site for https://jesuslovesyou.xyz.
 The existing emblem is centered in white on a black background at 144 CSS pixels wide, matching the Offer Filter website footer. No JavaScript, dependencies, or build step is required.
 
 Serve the `public` directory. On Render, use a Static Site with the `public` publish directory and automatic deploys disabled. Publishing must respect the owner's local-build policy.
+
+The Render service is `jesus-loves-you` (https://jesus-loves-you.onrender.com), deployed by hand from the Render dashboard. To serve it at the domain, add `jesuslovesyou.xyz` and `www.jesuslovesyou.xyz` as custom domains on that service, then set these records at GoDaddy, replacing the existing `@` A records and any domain forwarding:
+
+| Type  | Name  | Value                          |
+|-------|-------|--------------------------------|
+| A     | `@`   | `216.24.57.1`                  |
+| CNAME | `www` | `jesus-loves-you.onrender.com` |
