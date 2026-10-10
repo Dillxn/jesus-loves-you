@@ -6,6 +6,8 @@ The existing emblem is centered in white on a black background at 432 CSS pixels
 
 Serve the `public` directory. On Render, use a Static Site with the `public` publish directory and automatic deploys disabled. Publishing must respect the owner's local-build policy.
 
+The emblem fits both viewport width and height, including short landscape screens. Reduced-motion changes take effect while the page is open: the dust stops and clears immediately, and resumes only if motion is enabled again. Run the dependency-free motion checks locally with `node --test tests/motion.test.mjs`.
+
 The Render service is `jesus-loves-you` (https://jesus-loves-you.onrender.com), deployed by hand from the Render dashboard. To serve it at the domain, add `jesuslovesyou.xyz` and `www.jesuslovesyou.xyz` as custom domains on that service, then set these records at GoDaddy, replacing the existing `@` A records and any domain forwarding:
 
 | Type  | Name  | Value                          |
